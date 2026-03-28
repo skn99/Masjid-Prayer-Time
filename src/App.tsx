@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, addMinutes, isAfter, parse, differenceInSeconds } from 'date-fns';
-import { Sun, Moon, Clock, X, RefreshCw, Copy, Maximize, Minimize } from 'lucide-react';
+import { format, addMinutes, addSeconds, isAfter, parse, differenceInSeconds } from 'date-fns';
+import { Sun, Moon, Clock, X, RefreshCw, Copy, Maximize, Minimize, Smartphone, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fetchPrayerTimesFromSpreadsheet } from './services/spreadsheetService';
 
@@ -104,9 +104,39 @@ export default function App() {
       
       if (isNaN(azanTime.getTime()) || isNaN(iqamahTime.getTime())) continue;
       
-      // Show for 1 minute after Iqamah
-      const oneMinAfter = addMinutes(iqamahTime, 1);
-      if (isAfter(now, iqamahTime) && isAfter(oneMinAfter, now)) {
+      // Show for 20 seconds after Iqamah
+      const twentySecAfter = addSeconds(iqamahTime, 20);
+      if (isAfter(now, iqamahTime) && isAfter(twentySecAfter, now)) {
+        return true;
+      }
+    }
+    return false;
+  }, [timings, currentTime]);
+
+  // Determine if we should show the Switch Off Mobile screen
+  const showMobileOffScreen = useMemo(() => {
+    if (!timings) return false;
+    const prayers = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+    const now = currentTime;
+
+    for (const name of prayers) {
+      // Skip for Jummah (Friday Dhuhr)
+      if (name === "Dhuhr" && now.getDay() === 5) continue;
+
+      const azanTimeStr = timings[name as keyof PrayerTimings];
+      if (!azanTimeStr) continue;
+      const iqamahTimeStr = getIqamahTime(azanTimeStr, name, now);
+      if (!iqamahTimeStr) continue;
+      
+      const azanTime = parse(azanTimeStr, 'h:mm a', now);
+      const iqamahTime = parse(iqamahTimeStr, 'h:mm a', now);
+      
+      if (isNaN(azanTime.getTime()) || isNaN(iqamahTime.getTime())) continue;
+      
+      // Show for 40 seconds AFTER the Saf Screen (from 20 to 60 seconds after Iqamah)
+      const twentySecAfter = addSeconds(iqamahTime, 20);
+      const sixtySecAfter = addSeconds(iqamahTime, 60);
+      if (isAfter(now, twentySecAfter) && isAfter(sixtySecAfter, now)) {
         return true;
       }
     }
@@ -186,8 +216,13 @@ export default function App() {
           countdown = `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
+        let prayerName = prayer.name;
+        if (now.getDay() === 5 && prayer.name === "Dhuhr" && countdown) {
+          prayerName = "Salatul-Jumuah";
+        }
+
         return { 
-          name: prayer.name, 
+          name: prayerName, 
           azan: prayer.time, 
           iqamah: iqamahTimeStr,
           countdown,
@@ -263,6 +298,102 @@ export default function App() {
               >
                 உங்கள் வரிசைகளை நேராகச் சீராக்கிக் கொள்ளுங்கள், நெருங்கி நில்லுங்கள், இடைவெளிகளை நிரப்புங்கள், ஷைத்தான் வரிசைகளின் இடைவெளியில் நுழையாதவாறு பார்த்துக் கொள்ளுங்கள்.
               </motion.p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Phone Ad Overlay */}
+      <AnimatePresence>
+        {showMobileOffScreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={`fixed inset-0 z-[200] flex flex-col items-center justify-center p-10 text-center ${isDarkMode ? 'bg-black' : 'bg-white'}`}
+          >
+            <div className="max-w-5xl w-full space-y-16">
+              {/* Animated Phone Icon */}
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
+                animate={{ 
+                  scale: [0.5, 1.1, 1], 
+                  opacity: 1, 
+                  rotate: [ -10, 10, -5, 5, 0 ],
+                }}
+                transition={{ 
+                  duration: 1.5,
+                  times: [0, 0.4, 0.6, 0.8, 1],
+                  ease: "easeOut"
+                }}
+                className="flex justify-center"
+              >
+                <div className={`relative p-12 rounded-[4rem] border-8 ${isDarkMode ? 'border-red-500 bg-red-500/10' : 'border-red-600 bg-red-50/50'}`}>
+                  <motion.div
+                    animate={{ 
+                      scale: [1, 1.2, 1],
+                      opacity: [1, 0.5, 1]
+                    }}
+                    transition={{ 
+                      repeat: Infinity, 
+                      duration: 2,
+                      ease: "easeInOut"
+                    }}
+                    className="relative"
+                  >
+                    <Smartphone size="20vh" className={isDarkMode ? 'text-red-500' : 'text-red-600'} />
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1, duration: 0.5 }}
+                      className="absolute inset-0 flex items-center justify-center"
+                    >
+                      <div className="w-[25vh] h-[2vh] bg-red-500 rotate-45 absolute" />
+                      <VolumeX size="10vh" className="absolute -bottom-4 -right-4 text-red-500 bg-black rounded-full p-2 border-2 border-red-500" />
+                    </motion.div>
+                  </motion.div>
+                  
+                  {/* Pulse Rings */}
+                  <motion.div 
+                    animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="absolute inset-0 rounded-[4rem] border-4 border-red-500"
+                  />
+                  <motion.div 
+                    animate={{ scale: [1, 2], opacity: [0.3, 0] }}
+                    transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
+                    className="absolute inset-0 rounded-[4rem] border-4 border-red-500"
+                  />
+                </div>
+              </motion.div>
+
+              <div className="space-y-8">
+                <motion.h2 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className={`text-[8vh] font-black uppercase tracking-tighter ${isDarkMode ? 'text-white' : 'text-black'}`}
+                >
+                  Switch Off Mobile
+                </motion.h2>
+                
+                <motion.p 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className={`text-[4vh] font-bold uppercase tracking-widest ${isDarkMode ? 'text-red-500' : 'text-red-600'}`}
+                >
+                  Please silence or turn off your phones
+                </motion.p>
+
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 40, ease: "linear" }}
+                  className="h-2 bg-red-500 mx-auto rounded-full"
+                  style={{ maxWidth: '400px' }}
+                />
+              </div>
             </div>
           </motion.div>
         )}
@@ -419,7 +550,9 @@ export default function App() {
             <span>{stripAMPM(timings?.Fajr)}</span>
           </div>
           <div className="flex flex-col items-center leading-none">
-            <span className="text-[2vh] uppercase font-[900] mb-[0.2vh]">Dhuhr</span>
+            <span className="text-[2vh] uppercase font-[900] mb-[0.2vh]">
+              {currentTime.getDay() === 5 ? "Salatul-Jumuah" : "Dhuhr"}
+            </span>
             <span>{stripAMPM(timings?.Dhuhr)}</span>
           </div>
           <div className="flex flex-col items-center leading-none">
