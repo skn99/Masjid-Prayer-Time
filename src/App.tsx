@@ -436,8 +436,8 @@ export default function App() {
           </div>
         </div>
 
-        <div className="text-right flex flex-col justify-end pb-[0.5vh]">
-          <div className={`text-[2.5vh] font-black ${isDarkMode ? 'text-white/80' : 'text-black/80'}`}>{format(currentTime, 'dd.MM.yyyy')}</div>
+        <div className="text-right flex flex-col items-end leading-none pb-[0.5vh]">
+          <div className={`text-[2vh] font-[900] uppercase mb-[0.2vh] ${isDarkMode ? 'text-white/80' : 'text-black/80'}`}>{format(currentTime, 'dd.MM.yyyy')}</div>
           <div className={`text-[4vh] font-black ${isDarkMode ? 'text-white' : 'text-black'}`}>{format(currentTime, 'h:mm')}</div>
         </div>
       </div>
