@@ -487,7 +487,7 @@ export default function App() {
       </div>
 
       <div className="flex-1 flex items-center justify-center overflow-hidden">
-        <div className="grid grid-cols-[10vw_1fr] gap-[2vw] items-stretch w-full max-w-[92vw]">
+        <div className="grid grid-cols-[6vw_1fr] gap-[2vw] items-stretch w-full max-w-[92vw]">
           
           {/* Left Labels */}
           <div className="flex flex-col gap-[0.5vh]">
@@ -514,7 +514,7 @@ export default function App() {
               key={format(currentTime, 'h:mm:ss')}
               initial={{ opacity: 0.9 }}
               animate={{ opacity: 1 }}
-              className={`text-[27vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent ${isDarkMode ? 'text-[#00FF00]' : 'text-[#008000]'}`}
+              className={`text-[30vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent ${isDarkMode ? 'text-[#00FF00]' : 'text-[#008000]'}`}
             >
               {format(currentTime, 'h:mm:ss')}
             </motion.div>
@@ -524,7 +524,7 @@ export default function App() {
               key={nextPrayer?.countdown ? nextPrayer?.name : nextPrayer?.azan}
               initial={{ scale: 0.98, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className={`text-[27vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent mt-[-2vh] ${isDarkMode ? 'text-[#FFFFEE]' : 'text-[#333333]'}`}
+              className={`text-[30vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent mt-[-2.5vh] ${isDarkMode ? 'text-[#FFFFEE]' : 'text-[#333333]'}`}
             >
               {nextPrayer?.countdown ? nextPrayer?.name : nextPrayer?.azan}
             </motion.div>
@@ -534,7 +534,7 @@ export default function App() {
               key={nextPrayer?.countdown || nextPrayer?.iqamah}
               initial={{ scale: 0.98, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className={`text-[27vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent mt-[-4vh] ${isDarkMode ? 'text-[#FF0000]' : 'text-[#CC0000]'}`}
+              className={`text-[30vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent mt-[-5vh] ${isDarkMode ? 'text-[#FF0000]' : 'text-[#CC0000]'}`}
             >
               {nextPrayer?.countdown || nextPrayer?.iqamah}
             </motion.div>
