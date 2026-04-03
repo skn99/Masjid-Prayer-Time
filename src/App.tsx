@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { format, addMinutes, addSeconds, isAfter, parse, differenceInSeconds } from 'date-fns';
 import { Sun, Moon, Clock, X, RefreshCw, Copy, Maximize, Minimize, Smartphone, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { fetchPrayerTimesFromSpreadsheet } from './services/spreadsheetService';
+import { fetchPrayerTimesFromSpreadsheet, fetchAllPrayerTimesForMonth } from './services/spreadsheetService';
 
 // Configuration
 const MASJID_NAME = "MASJIDUL AKBAR JUMMAH MASJID MABERIYA";
@@ -29,6 +29,7 @@ interface PrayerTimings {
 export default function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [timings, setTimings] = useState<PrayerTimings | null>(null);
+  const [monthTimings, setMonthTimings] = useState<Record<string, PrayerTimings>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -160,29 +161,88 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch prayer times on day change and every 12 hours
-  const todayStr = format(currentTime, 'yyyy-MM-dd');
+  // Load cached timings on mount
   useEffect(() => {
-    const fetchPrayerTimes = async () => {
-      setIsRefreshing(true);
+    const cached = localStorage.getItem('prayer_timings_month');
+    if (cached) {
       try {
-        const timings = await fetchPrayerTimesFromSpreadsheet(currentTime);
-        setTimings(timings);
-        setLoading(false);
-        setError(null);
-      } catch (err) {
-        console.error("Spreadsheet Fetch Error:", err);
-        setError(`Could not load prayer times from spreadsheet: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        setLoading(false);
-      } finally {
-        setIsRefreshing(false);
+        const parsed = JSON.parse(cached);
+        setMonthTimings(parsed);
+      } catch (e) {
+        console.error("Failed to parse cached timings", e);
+      }
+    }
+  }, []);
+
+  // Sync month data from spreadsheet
+  const syncMonthData = async (date: Date) => {
+    setIsRefreshing(true);
+    try {
+      const data = await fetchAllPrayerTimesForMonth(date);
+      setMonthTimings(data);
+      localStorage.setItem('prayer_timings_month', JSON.stringify(data));
+      localStorage.setItem('last_sync_date', format(new Date(), 'yyyy-MM-dd HH:mm'));
+      setError(null);
+      return data;
+    } catch (err) {
+      console.error("Month Sync Error:", err);
+      setError(`Sync failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      return null;
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Check for 9 PM sync every minute
+  useEffect(() => {
+    const checkSync = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      
+      // Sync at 9:00 PM (21:00)
+      if (hours === 21 && minutes === 0) {
+        console.log("Triggering 9 PM sync...");
+        syncMonthData(now);
       }
     };
 
-    fetchPrayerTimes();
-    const interval = setInterval(fetchPrayerTimes, 43200000); // 12-hour fallback
+    const interval = setInterval(checkSync, 60000); // Check every minute
     return () => clearInterval(interval);
-  }, [todayStr]);
+  }, []);
+
+  // Update current day timings from month data
+  useEffect(() => {
+    const dayOfMonth = format(currentTime, 'd');
+    const monthShort = format(currentTime, 'MMM');
+    const dateKey = `${dayOfMonth}-${monthShort}`;
+
+    if (monthTimings[dateKey]) {
+      setTimings(monthTimings[dateKey]);
+      setLoading(false);
+    } else if (isOnline) {
+      // If no data for today and we're online, try to sync the month
+      syncMonthData(currentTime).then(data => {
+        if (data && data[dateKey]) {
+          setTimings(data[dateKey]);
+          setLoading(false);
+        } else if (!data) {
+          // Fallback to single day fetch if month sync fails
+          fetchPrayerTimesFromSpreadsheet(currentTime).then(t => {
+            setTimings(t);
+            setLoading(false);
+          }).catch(err => {
+            setError(`Could not load timings: ${err.message}`);
+            setLoading(false);
+          });
+        }
+      });
+    } else {
+      // Offline and no data
+      setError("Offline and no cached prayer times for today.");
+      setLoading(false);
+    }
+  }, [currentTime, monthTimings, isOnline]);
 
   // Calculate Next Prayer
   const nextPrayer = useMemo(() => {
@@ -452,19 +512,10 @@ export default function App() {
           <div className="flex gap-2">
             <button 
               onClick={async () => {
-                setIsRefreshing(true);
-                try {
-                  const timings = await fetchPrayerTimesFromSpreadsheet(currentTime);
-                  setTimings(timings);
-                  setError(null);
-                } catch (err) {
-                  setError(`Refresh failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
-                } finally {
-                  setIsRefreshing(false);
-                }
+                await syncMonthData(currentTime);
               }}
               className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-green-400' : 'bg-black/10 hover:bg-black/20 text-green-600'} ${isRefreshing ? 'animate-spin' : ''}`}
-              title="Refresh Timings"
+              title="Sync Month Timings"
             >
               <RefreshCw size={24} />
             </button>

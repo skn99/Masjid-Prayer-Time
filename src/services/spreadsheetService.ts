@@ -12,6 +12,35 @@ export interface PrayerTimings {
   Isha: string;
 }
 
+export async function fetchAllPrayerTimesForMonth(date: Date): Promise<Record<string, PrayerTimings>> {
+  const monthName = format(date, 'MMMM').toUpperCase();
+  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${monthName}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch spreadsheet for ${monthName}: ${response.statusText}`);
+  }
+
+  const csvText = await response.text();
+  const parsed = Papa.parse(csvText, { header: true });
+
+  if (parsed.errors.length > 0) {
+    console.error('PapaParse Errors:', parsed.errors);
+    throw new Error('Failed to parse spreadsheet data');
+  }
+
+  const data = parsed.data as any[];
+  const monthTimings: Record<string, PrayerTimings> = {};
+
+  data.forEach(row => {
+    if (row.DATE) {
+      monthTimings[row.DATE] = mapRowToTimings(row);
+    }
+  });
+
+  return monthTimings;
+}
+
 export async function fetchPrayerTimesFromSpreadsheet(date: Date): Promise<PrayerTimings> {
   const monthName = format(date, 'MMMM').toUpperCase();
   const dayOfMonth = format(date, 'd');
