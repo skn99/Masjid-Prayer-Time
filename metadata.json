@@ -1,5 +1,6 @@
 {
   "name": "Masjidul Akbar Prayer Dashboard",
   "description": "A full-screen prayer time dashboard for Masjidul Akbar Jummah Masjid, Matale, Sri Lanka.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

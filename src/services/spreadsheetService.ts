@@ -16,7 +16,7 @@ export async function fetchAllPrayerTimesForMonth(date: Date): Promise<Record<st
   const monthName = format(date, 'MMMM').toUpperCase();
   const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${monthName}`;
 
-  const response = await fetch(url);
+  const response = await globalThis.fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch spreadsheet for ${monthName}: ${response.statusText}`);
   }
@@ -49,7 +49,7 @@ export async function fetchPrayerTimesFromSpreadsheet(date: Date): Promise<Praye
 
   const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${monthName}`;
 
-  const response = await fetch(url);
+  const response = await globalThis.fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch spreadsheet for ${monthName}: ${response.statusText}`);
   }

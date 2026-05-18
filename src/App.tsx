@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMinutes, addSeconds, isAfter, parse, differenceInSeconds } from 'date-fns';
-import { Sun, Moon, Clock, X, RefreshCw, Copy, Maximize, Minimize, Smartphone, VolumeX } from 'lucide-react';
+import { Sun, Moon, Clock, X, RefreshCw, Copy, Maximize, Minimize, Smartphone, VolumeX, Layout } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fetchPrayerTimesFromSpreadsheet, fetchAllPrayerTimesForMonth } from './services/spreadsheetService';
 
@@ -36,6 +36,16 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<'classic' | 'modern'>(() => {
+    const saved = localStorage.getItem('app_theme_style');
+    return (saved as 'classic' | 'modern') || 'classic';
+  });
+
+  const toggleTheme = () => {
+    const newTheme = currentTheme === 'classic' ? 'modern' : 'classic';
+    setCurrentTheme(newTheme);
+    localStorage.setItem('app_theme_style', newTheme);
+  };
 
   const SHARED_URL = window.location.origin;
 
@@ -527,6 +537,13 @@ export default function App() {
               {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
             </button>
             <button 
+              onClick={toggleTheme}
+              className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-blue-400' : 'bg-black/10 hover:bg-black/20 text-blue-600'}`}
+              title="Toggle Theme Layout"
+            >
+              <Layout size={24} />
+            </button>
+            <button 
               onClick={toggleFullscreen}
               className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-purple-400' : 'bg-black/10 hover:bg-black/20 text-purple-600'}`}
               title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
@@ -538,59 +555,135 @@ export default function App() {
       </div>
 
       <div className="flex-1 flex items-center justify-center overflow-hidden">
-        <div className="grid grid-cols-[6vw_1fr] gap-[2vw] items-stretch w-full max-w-[92vw]">
-          
-          {/* Left Labels */}
-          <div className="flex flex-col gap-[0.5vh]">
-            <div className={`flex-1 border-2 ${isDarkMode ? 'border-white/20 bg-white/5' : 'border-black/20 bg-black/5'} rounded-xl flex items-center justify-center`}>
-              <div className="text-[2.5vh] font-black tracking-widest leading-none text-center">
-                T<br/>I<br/>M<br/>E
-              </div>
-            </div>
-            <div className={`flex-1 border-2 ${isDarkMode ? 'border-white/20 bg-white/5' : 'border-black/20 bg-black/5'} rounded-xl flex items-center justify-center`}>
-              <div className="text-[2.5vh] font-black tracking-widest leading-none text-center">
-                A<br/>Z<br/>A<br/>N
-              </div>
-            </div>
-            <div className={`flex-1 border-2 ${isDarkMode ? 'border-white/20 bg-white/5' : 'border-black/20 bg-black/5'} rounded-xl flex items-center justify-center`}>
-              <div className="text-[2.5vh] font-black tracking-widest leading-none text-center">
-                I<br/>Q<br/>A<br/>M<br/>A<br/>H
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-[0.5vh] flex-1 min-h-0">
-            {/* Current Time */}
-            <motion.div 
-              key={format(currentTime, 'h:mm:ss')}
-              initial={{ opacity: 0.9 }}
-              animate={{ opacity: 1 }}
-              className={`text-[28vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent ${isDarkMode ? 'text-[#00FF00]' : 'text-[#008000]'}`}
-            >
-              {format(currentTime, 'h:mm:ss')}
-            </motion.div>
+        {currentTheme === 'classic' ? (
+          <div className="grid grid-cols-[6vw_1fr] gap-[2vw] items-stretch w-full max-w-[92vw]">
             
-            {/* Next Azan / Prayer Name */}
-            <motion.div 
-              key={nextPrayer?.countdown ? nextPrayer?.name : nextPrayer?.azan}
-              initial={{ scale: 0.98, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className={`${nextPrayer?.name === "Salatul-Jumuah" ? 'text-[16vh]' : 'text-[28vh]'} leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent mt-[-2vh] ${isDarkMode ? 'text-[#FFFFEE]' : 'text-[#333333]'}`}
-            >
-              {nextPrayer?.countdown ? nextPrayer?.name : nextPrayer?.azan}
-            </motion.div>
+            {/* Left Labels */}
+            <div className="flex flex-col gap-[0.5vh]">
+              <div className={`flex-1 border-2 ${isDarkMode ? 'border-white/20 bg-white/5' : 'border-black/20 bg-black/5'} rounded-xl flex items-center justify-center`}>
+                <div className="text-[2.5vh] font-black tracking-widest leading-none text-center">
+                  T<br/>I<br/>M<br/>E
+                </div>
+              </div>
+              <div className={`flex-1 border-2 ${isDarkMode ? 'border-white/20 bg-white/5' : 'border-black/20 bg-black/5'} rounded-xl flex items-center justify-center`}>
+                <div className="text-[2.5vh] font-black tracking-widest leading-none text-center">
+                  A<br/>Z<br/>A<br/>N
+                </div>
+              </div>
+              <div className={`flex-1 border-2 ${isDarkMode ? 'border-white/20 bg-white/5' : 'border-black/20 bg-black/5'} rounded-xl flex items-center justify-center`}>
+                <div className="text-[2.5vh] font-black tracking-widest leading-none text-center">
+                  I<br/>Q<br/>A<br/>M<br/>A<br/>H
+                </div>
+              </div>
+            </div>
 
-            {/* Next Iqamah */}
-            <motion.div 
-              key={nextPrayer?.countdown || nextPrayer?.iqamah}
-              initial={{ scale: 0.98, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className={`text-[28vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent mt-[-4vh] ${isDarkMode ? 'text-[#FF0000]' : 'text-[#CC0000]'}`}
-            >
-              {nextPrayer?.countdown || nextPrayer?.iqamah}
-            </motion.div>
+            <div className="flex flex-col gap-[0.5vh] flex-1 min-h-0">
+              {/* Current Time */}
+              <motion.div 
+                key={format(currentTime, 'h:mm:ss')}
+                initial={{ opacity: 0.9 }}
+                animate={{ opacity: 1 }}
+                className={`text-[28vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent ${isDarkMode ? 'text-[#00FF00]' : 'text-[#008000]'}`}
+              >
+                {format(currentTime, 'h:mm:ss')}
+              </motion.div>
+              
+              {/* Next Azan / Prayer Name */}
+              <motion.div 
+                key={nextPrayer?.countdown ? nextPrayer?.name : nextPrayer?.azan}
+                initial={{ scale: 0.98, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className={`${nextPrayer?.name === "Salatul-Jumuah" ? 'text-[16vh]' : 'text-[28vh]'} leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent mt-[-2vh] ${isDarkMode ? 'text-[#FFFFEE]' : 'text-[#333333]'}`}
+              >
+                {nextPrayer?.countdown ? nextPrayer?.name : nextPrayer?.azan}
+              </motion.div>
+
+              {/* Next Iqamah */}
+              <motion.div 
+                key={nextPrayer?.countdown || nextPrayer?.iqamah}
+                initial={{ scale: 0.98, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className={`text-[28vh] leading-[1] font-black tracking-tighter flex justify-center items-center border-2 border-transparent mt-[-4vh] ${isDarkMode ? 'text-[#FF0000]' : 'text-[#CC0000]'}`}
+              >
+                {nextPrayer?.countdown || nextPrayer?.iqamah}
+              </motion.div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="relative h-full w-full flex flex-col items-center justify-between p-[2vh] rounded-3xl overflow-hidden border-8 border-gray-800 shadow-2xl">
+            {/* Background with overlay */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center z-0"
+              style={{ backgroundImage: `url('/src/assets/images/masjid_background_1779099924290.png')` }}
+            >
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+            </div>
+
+            {/* Top Part: Time and Date */}
+            <div className="relative z-10 w-full flex justify-between items-start pt-[1vh]">
+              <div className="flex items-baseline">
+                <motion.div 
+                  key={format(currentTime, 'hh:mm')}
+                  initial={{ opacity: 0.8 }}
+                  animate={{ opacity: 1 }}
+                  className="text-[32vh] font-black leading-none text-[#00FF00] tracking-tighter drop-shadow-[0_0_15px_rgba(0,255,0,0.3)]"
+                >
+                  {format(currentTime, 'hh:mm')}
+                </motion.div>
+                <motion.div 
+                  key={currentTime.getSeconds()}
+                  initial={{ opacity: 0.5 }}
+                  animate={{ opacity: 1 }}
+                  className="text-[16vh] font-black leading-none text-[#00FF00] ml-[1vw]"
+                >
+                  :{currentTime.getSeconds().toString().padStart(2, '0')}
+                </motion.div>
+                <div className="text-[14vh] font-black leading-none text-[#00FF00] ml-[2vw] opacity-90">
+                  {format(currentTime, 'a')}
+                </div>
+              </div>
+              <div className="text-[5vh] font-bold text-red-600 mt-[2vh] tracking-tight bg-black/30 px-6 py-2 rounded-xl backdrop-blur-md">
+                {format(currentTime, 'dd / MMMM / yyyy')}
+              </div>
+            </div>
+
+            {/* Middle Part: Labels */}
+            <div className="relative z-10 w-full flex justify-around items-center px-[2vw] gap-[4vw]">
+              <motion.div 
+                className="flex-1 bg-gradient-to-b from-blue-600/90 to-blue-900/95 py-[0.8vh] rounded-[1.5vh] border-b-4 border-blue-950 shadow-[0_8px_20px_rgba(0,0,0,0.5)] flex items-center justify-center"
+                animate={{ y: [0, -2, 0] }}
+                transition={{ repeat: Infinity, duration: 3 }}
+              >
+                <span className="text-[3.5vh] font-[1000] text-white uppercase tracking-[0.1em] drop-shadow-lg">
+                  {nextPrayer?.name === "Salatul-Jumuah" ? "JUMUAH" : nextPrayer?.name}
+                </span>
+              </motion.div>
+              <motion.div 
+                className="flex-1 bg-gradient-to-b from-blue-600/90 to-blue-900/95 py-[0.8vh] rounded-[1.5vh] border-b-4 border-blue-950 shadow-[0_8px_20px_rgba(0,0,0,0.5)] flex items-center justify-center"
+                animate={{ y: [0, -2, 0] }}
+                transition={{ repeat: Infinity, duration: 3, delay: 0.2 }}
+              >
+                <span className="text-[3.5vh] font-[1000] text-white uppercase tracking-[0.1em] drop-shadow-lg">IQAMATH</span>
+              </motion.div>
+            </div>
+
+            {/* Bottom Part: Prayer Times */}
+            <div className="relative z-10 w-full flex justify-around items-center pb-[2vh]">
+              <motion.div 
+                key={nextPrayer?.azan}
+                className="text-[20vh] font-black leading-none text-[#FFFF00] tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,0,0.4)]"
+              >
+                {stripAMPM(nextPrayer?.azan)}
+              </motion.div>
+              <motion.div 
+                key={nextPrayer?.countdown || nextPrayer?.iqamah}
+                className="text-[20vh] font-black leading-none text-[#FF0000] tracking-tighter drop-shadow-[0_0_20px_rgba(255,0,0,0.4)]"
+              >
+                {nextPrayer?.countdown || stripAMPM(nextPrayer?.iqamah)}
+              </motion.div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Bar */}
