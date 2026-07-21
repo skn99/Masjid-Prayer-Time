@@ -36,6 +36,8 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<string>('');
   const [currentTheme, setCurrentTheme] = useState<'classic' | 'modern'>(() => {
     const saved = localStorage.getItem('app_theme_style');
     return (saved as 'classic' | 'modern') || 'classic';
@@ -171,7 +173,7 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Load cached timings on mount
+  // Load cached timings and last sync on mount
   useEffect(() => {
     const cached = localStorage.getItem('prayer_timings_month');
     if (cached) {
@@ -182,21 +184,33 @@ export default function App() {
         console.error("Failed to parse cached timings", e);
       }
     }
+    const lastSync = localStorage.getItem('last_sync_date');
+    if (lastSync) {
+      setLastSyncTime(lastSync);
+    }
   }, []);
 
   // Sync month data from spreadsheet
   const syncMonthData = async (date: Date) => {
     setIsRefreshing(true);
+    setSyncStatus('Syncing...');
     try {
       const data = await fetchAllPrayerTimesForMonth(date);
+      const nowStr = format(new Date(), 'yyyy-MM-dd HH:mm');
       setMonthTimings(data);
       localStorage.setItem('prayer_timings_month', JSON.stringify(data));
-      localStorage.setItem('last_sync_date', format(new Date(), 'yyyy-MM-dd HH:mm'));
+      localStorage.setItem('last_sync_date', nowStr);
+      setLastSyncTime(nowStr);
+      setSyncStatus('Successfully Synced');
       setError(null);
+      // Clear success message after 5 seconds
+      setTimeout(() => setSyncStatus(''), 5000);
       return data;
     } catch (err) {
       console.error("Month Sync Error:", err);
-      setError(`Sync failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      const errMsg = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Sync failed: ${errMsg}`);
+      setSyncStatus('Sync Failed');
       return null;
     } finally {
       setIsRefreshing(false);
@@ -515,10 +529,32 @@ export default function App() {
         <div className="absolute right-4 top-0 flex items-center gap-4">
           <div className="flex items-center gap-2">
             <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`} />
-            <span className={`text-[10px] font-bold uppercase tracking-widest opacity-50 ${isDarkMode ? 'text-white' : 'text-black'}`}>
-              {isOnline ? 'Online' : 'Offline'}
-            </span>
+            <div className="flex flex-col">
+              <span className={`text-[10px] font-bold uppercase tracking-widest leading-tight ${isDarkMode ? 'text-white' : 'text-black'}`}>
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+              {lastSyncTime && (
+                <span className={`text-[8px] font-bold opacity-60 ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+                  Last Sync: {lastSyncTime}
+                </span>
+              )}
+            </div>
           </div>
+          {syncStatus && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                syncStatus.includes('Failed') 
+                  ? 'bg-red-500/20 border-red-500 text-red-500' 
+                  : syncStatus.includes('Synced')
+                  ? 'bg-green-500/20 border-green-500 text-green-500'
+                  : 'bg-blue-500/20 border-blue-500 text-blue-500'
+              }`}
+            >
+              {syncStatus}
+            </motion.div>
+          )}
           <div className="flex gap-2">
             <button 
               onClick={async () => {

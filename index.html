@@ -7,6 +7,27 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
+    <script>
+      // Prevent crash when external scripts / extensions try to overwrite window.fetch in sandboxed environments
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var currentFetch = originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+              return currentFetch;
+            },
+            set: function(val) {
+              currentFetch = val;
+            }
+          });
+        } catch (e) {
+          console.warn("Could not safely wrap window.fetch:", e);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
